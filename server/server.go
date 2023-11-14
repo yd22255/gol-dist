@@ -14,52 +14,28 @@ import (
 func neighbour(req stubs.Request, y, x int) int {
 	//Check neighbours for individual cell. Find way to implement for loop for open grid checking
 	count := 0
-	//z := util.Cell{x, y}
-	var left, right, up, down int = 0, 0, 0, 0
-	if x == 0 {
-		left = req.EndX - 1
-	} else {
-		left = x - 1
+	edgex := [3]int{0, req.EndX - 1, 0}
+	edgey := [3]int{0, req.EndY - 1, 0}
+	adjacent := [6]int{x, x - 1, x + 1, y, y - 1, y + 1}
+
+	for i := 0; i < len(edgex)-1; i++ {
+		if x == edgex[i] {
+			adjacent[i+1] = edgex[i+1]
+		}
 	}
-	if x == req.EndX-1 {
-		right = 0
-	} else {
-		right = x + 1
+	for i := 0; i < len(edgey)-1; i++ {
+		if y == edgey[i] {
+			adjacent[4+i] = edgey[i+1]
+		}
 	}
-	if y == 0 {
-		up = req.EndY - 1
-	} else {
-		up = y - 1
-	}
-	if y == req.EndY-1 {
-		down = 0
-	} else {
-		down = y + 1
-	}
-	//TODO : Run foreach on each neighbour - Likely need array of neighbours which isnt hard
-	if util.Cell.In(util.Cell{right, y}, req.Alives) {
-		count++
-	}
-	if util.Cell.In(util.Cell{right, down}, req.Alives) {
-		count++
-	}
-	if util.Cell.In(util.Cell{right, up}, req.Alives) {
-		count++
-	}
-	if util.Cell.In(util.Cell{left, y}, req.Alives) {
-		count++
-	}
-	if util.Cell.In(util.Cell{left, down}, req.Alives) {
-		count++
-	}
-	if util.Cell.In(util.Cell{left, up}, req.Alives) {
-		count++
-	}
-	if util.Cell.In(util.Cell{x, down}, req.Alives) {
-		count++
-	}
-	if util.Cell.In(util.Cell{x, up}, req.Alives) {
-		count++
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			if adjacent[i] != x || adjacent[j+3] != y {
+				if req.World[adjacent[i]][adjacent[j+3]] == 255 {
+					count++
+				}
+			}
+		}
 	}
 	return count
 }

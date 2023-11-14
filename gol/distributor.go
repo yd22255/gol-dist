@@ -10,6 +10,8 @@ import (
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
+var server = flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
+
 type distributorChannels struct {
 	events     chan<- Event
 	ioCommand  chan<- ioCommand
@@ -50,7 +52,6 @@ func makeCall(client *rpc.Client, world [][]byte, p Params, alives []util.Cell) 
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
 	///this bit can't be in distributor bc it loops
-	server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	flag.Parse()
 	client, _ := rpc.Dial("tcp", *server)
 	defer client.Close()
