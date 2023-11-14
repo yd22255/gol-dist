@@ -73,7 +73,7 @@ func distributor(p Params, c distributorChannels) {
 			worldslice[i][j] = <-c.ioInput
 		}
 	}
-
+	//worldslice[0][0] = 255
 	// TODO: Execute all turns of the Game of Life.
 	alives := calculateAliveCells(p, worldslice)
 	finishedWorld := makeCall(client, worldslice, p, alives)

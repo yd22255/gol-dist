@@ -56,11 +56,20 @@ func calculateAliveCells(req stubs.Request) []util.Cell {
 /** Super-Secret `reversing a string' method we can't allow clients to see. **/
 func ExecuteGol(req stubs.Request) [][]byte {
 	//Feed in horizontal strips.
-	newWorld := req.World
+	newWorld := make([][]uint8, req.EndY)
+	for i := range newWorld {
+		newWorld[i] = make([]uint8, req.EndX)
+		for j := range newWorld[i] {
+			var x uint8
+			x = req.World[i][j]
+			newWorld[i][j] = x
+		}
+	}
+
 	for i := req.StartX; i < req.EndX; i++ {
 		for j := req.StartY; j < req.EndY; j++ {
-			count := neighbour(req, i, j)
-			if newWorld[i][j] == 255 {
+			count := neighbour(req, j, i)
+			if req.World[i][j] == 255 {
 				if count != 2 && count != 3 {
 					newWorld[i][j] = 0
 				}
@@ -78,12 +87,11 @@ func ExecuteGol(req stubs.Request) [][]byte {
 type GolOperations struct{}
 
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
-	res.World = req.World
-
 	for i := 0; i < req.Turns; i++ {
-		res.World = ExecuteGol(req)
+		req.World = ExecuteGol(req)
 		req.Alives = calculateAliveCells(req)
 	}
+	res.World = req.World
 	return
 }
 
