@@ -2,6 +2,7 @@ package gol
 
 import (
 	"fmt"
+
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
@@ -12,6 +13,7 @@ type Event interface {
 	// GetCompletedTurns should return the number of fully completed turns.
 	// If the 0th turn is finished, this should return 1.
 	GetCompletedTurns() int
+	//i feel like this is going to be annoying
 }
 
 // AliveCellsCount is an Event notifying the user about the number of currently alive cells.
@@ -65,6 +67,7 @@ type TurnComplete struct { // implements Event
 type FinalTurnComplete struct {
 	CompletedTurns int
 	Alive          []util.Cell
+	//send alive cells down FTC event
 }
 
 // String methods allow the different types of Events and States to be printed.
