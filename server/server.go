@@ -11,6 +11,9 @@ import (
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
+var Achan []util.Cell
+var Tchan int
+
 func neighbour(req stubs.Request, y, x int) int {
 	//Check neighbours for individual cell. Find way to implement for loop for open grid checking
 	count := 0
@@ -65,7 +68,6 @@ func ExecuteGol(req stubs.Request) [][]byte {
 			newWorld[i][j] = x
 		}
 	}
-
 	for i := req.StartX; i < req.EndX; i++ {
 		for j := req.StartY; j < req.EndY; j++ {
 			count := neighbour(req, j, i)
@@ -84,14 +86,24 @@ func ExecuteGol(req stubs.Request) [][]byte {
 	return newWorld
 }
 
-type GolOperations struct{}
+type GolOperations struct {
+}
 
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
+	//res.Alives = calculateAliveCells(req)
 	for i := 0; i < req.Turns; i++ {
 		req.World = ExecuteGol(req)
 		req.Alives = calculateAliveCells(req)
+		Achan = req.Alives
+		Tchan = req.Turns
 	}
 	res.World = req.World
+	return
+}
+
+func (g *GolOperations) ServerTicker(req stubs.Request, res stubs.Response) (err error) {
+	res.Alives = Achan
+	res.Turns = Tchan
 	return
 }
 
