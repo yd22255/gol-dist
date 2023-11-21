@@ -64,7 +64,7 @@ func makeTicker(client *rpc.Client, world [][]byte, done chan bool, c distributo
 				tiresponse := new(stubs.Response)
 
 				client.Call(stubs.ServerTicker, tirequest, tiresponse)
-				fmt.Println(tiresponse.Turns, tiresponse.Alives)
+				fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
 				//fmt.Println(response.Turns, response.Alives)
 				c.events <- AliveCellsCount{tiresponse.Turns, len(tiresponse.Alives)}
 			}
