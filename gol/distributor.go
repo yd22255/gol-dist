@@ -22,6 +22,18 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
+func outputPGM(c distributorChannels, p Params, world [][]uint8) {
+	fmt.Println("inpgm")
+	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
+	c.ioCommand <- ioOutput
+	c.ioFilename <- filename
+	for i := 0; i < p.ImageWidth; i++ {
+		for j := 0; j < p.ImageHeight; j++ {
+			fmt.Println(i, j)
+			c.ioOutput <- world[i][j]
+		}
+	}
+}
 func calculateAliveCells(p Params, world [][]byte) []util.Cell {
 	var alives []util.Cell
 	//world[6][4] = 255 .
@@ -110,7 +122,7 @@ func distributor(p Params, c distributorChannels) {
 	//pass down the events channel
 	//close(c.ioOutput)
 	c.events <- FinalTurnComplete{p.Turns, lastalives}
-
+	outputPGM(c, p, finishedWorld.World)
 	// Make sure that the Io has finished any output before exiting.
 	fmt.Println("pre idle")
 	//c.ioCommand <- ioCheckIdle
