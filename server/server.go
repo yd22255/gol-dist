@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"math/rand"
 	"net"
 	"net/rpc"
@@ -10,6 +11,9 @@ import (
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
+
+var Achan []util.Cell
+var Tchan int
 
 func neighbour(req stubs.Request, y, x int) int {
 	//Check neighbours for individual cell. Find way to implement for loop for open grid checking
@@ -65,7 +69,6 @@ func ExecuteGol(req stubs.Request) [][]byte {
 			newWorld[i][j] = x
 		}
 	}
-
 	for i := req.StartX; i < req.EndX; i++ {
 		for j := req.StartY; j < req.EndY; j++ {
 			count := neighbour(req, j, i)
@@ -84,14 +87,31 @@ func ExecuteGol(req stubs.Request) [][]byte {
 	return newWorld
 }
 
-type GolOperations struct{}
+type GolOperations struct {
+}
 
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
+	req.Alives = calculateAliveCells(req)
+	Achan = req.Alives
+	Tchan = 0
 	for i := 0; i < req.Turns; i++ {
 		req.World = ExecuteGol(req)
 		req.Alives = calculateAliveCells(req)
+		Achan = req.Alives
+		Tchan = Tchan + 1
+		//res.Alives = Achan
+		//res.Turns = Tchan
+
 	}
 	res.World = req.World
+	res.Alives = calculateAliveCells(req)
+	return
+}
+
+func (g *GolOperations) ServerTicker(req stubs.Request, res *stubs.Response) (err error) {
+	res.Alives = Achan
+	res.Turns = Tchan
+	fmt.Println(Achan, Tchan)
 	return
 }
 
