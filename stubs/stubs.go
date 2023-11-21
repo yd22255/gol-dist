@@ -6,6 +6,7 @@ import (
 )
 
 var ExecuteHandler = "GolOperations.ExecuteWorker"
+var ServerTicker = "GolOperations.ServerTicker"
 
 //var PremiumReverseHandler = "SecretStringOperations.FastReverse"
 
@@ -17,7 +18,9 @@ type Params struct {
 }
 
 type Response struct {
-	World [][]byte
+	World  [][]byte
+	Alives []util.Cell
+	Turns  int
 }
 
 type Request struct {
