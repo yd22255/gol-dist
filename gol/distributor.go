@@ -20,6 +20,7 @@ type distributorChannels struct {
 	ioFilename chan<- string
 	ioOutput   chan<- uint8
 	ioInput    <-chan uint8
+	KeyPresses <-chan rune
 }
 
 func outputPGM(c distributorChannels, p Params, world [][]uint8) {
@@ -82,6 +83,13 @@ func makeTicker(client *rpc.Client, world [][]byte, done chan bool, c distributo
 				fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
 				//fmt.Println(response.Turns, response.Alives)
 				c.events <- AliveCellsCount{tiresponse.Turns, len(tiresponse.Alives)}
+			case command := <-c.KeyPresses:
+				fmt.Println("some keypress")
+				switch command {
+
+				case 's':
+					fmt.Println("HI -- S KEYPRESS")
+				}
 			}
 		}
 	}()
