@@ -99,12 +99,12 @@ func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (e
 		req.Alives = calculateAliveCells(req)
 		Achan = req.Alives
 		Tchan = Tchan + 1
-		fmt.Println("achannings - ", len(Achan), Tchan)
 		//res.Alives = Achan
 		//res.Turns = Tchan
 
 	}
 	res.World = req.World
+	res.Alives = calculateAliveCells(req)
 	return
 }
 
