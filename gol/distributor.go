@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"uk.ac.bris.cs/gameoflife/stubs"
-	"uk.ac.bris.cs/gameoflife/util"
 )
 
 var server = flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
