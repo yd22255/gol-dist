@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"math/rand"
 	"net"
 	"net/rpc"
@@ -90,20 +91,27 @@ type GolOperations struct {
 }
 
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
-	//res.Alives = calculateAliveCells(req)
+	req.Alives = calculateAliveCells(req)
+	Achan = req.Alives
+	Tchan = 0
 	for i := 0; i < req.Turns; i++ {
 		req.World = ExecuteGol(req)
 		req.Alives = calculateAliveCells(req)
 		Achan = req.Alives
-		Tchan = req.Turns
+		Tchan = Tchan + 1
+		fmt.Println("achannings - ", len(Achan), Tchan)
+		//res.Alives = Achan
+		//res.Turns = Tchan
+
 	}
 	res.World = req.World
 	return
 }
 
-func (g *GolOperations) ServerTicker(req stubs.Request, res stubs.Response) (err error) {
+func (g *GolOperations) ServerTicker(req stubs.Request, res *stubs.Response) (err error) {
 	res.Alives = Achan
 	res.Turns = Tchan
+	fmt.Println(Achan, Tchan)
 	return
 }
 
