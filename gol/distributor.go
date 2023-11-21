@@ -37,27 +37,12 @@ func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 	}
 	fmt.Println(count)
 }
-func calculateAliveCells(p Params, world [][]byte) []util.Cell {
-	var alives []util.Cell
-	//world[6][4] = 255 .
-	for i := 0; i < p.ImageWidth; i++ {
-		for j := 0; j < p.ImageHeight; j++ {
-			if world[i][j] == 255 {
-				alives = append(alives, util.Cell{j, i})
-			}
-		}
-	}
-	//alives = append(alives, cell{0, 15})
-	//fmt.Println(alives)
-
-	return alives
-}
 
 //where neighbour was
 
 //where worker was
 
-func makeCall(client *rpc.Client, world [][]byte, p Params, alives []util.Cell) *stubs.Response {
+func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
 	fmt.Println("turns:", p.Turns)
 	request := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
 	response := new(stubs.Response)
@@ -116,15 +101,13 @@ func distributor(p Params, c distributorChannels) {
 	done := make(chan bool, 1)
 
 	// TODO: Execute all turns of the Game of Life.
-	alives := calculateAliveCells(p, worldslice)
 	go makeTicker(client, worldslice, done, c)
-	finishedWorld := makeCall(client, worldslice, p, alives)
-	lastalives := calculateAliveCells(p, finishedWorld.World)
+	finishedWorld := makeCall(client, worldslice, p)
 	turn := 0
 	// TODO: Report the final state using FinalTurnCompleteEvent.
 	//pass down the events channel
 	//close(c.ioOutput)
-	c.events <- FinalTurnComplete{p.Turns, lastalives}
+	c.events <- FinalTurnComplete{p.Turns, finishedWorld.Alives}
 	outputPGM(c, p, finishedWorld.World)
 	// Make sure that the Io has finished any output before exiting.
 	fmt.Println("pre idle")
