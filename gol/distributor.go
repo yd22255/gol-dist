@@ -27,12 +27,15 @@ func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
 	c.ioCommand <- ioOutput
 	c.ioFilename <- filename
+	count := 0
 	for i := 0; i < p.ImageWidth; i++ {
 		for j := 0; j < p.ImageHeight; j++ {
+			count++
 			fmt.Println(i, j)
 			c.ioOutput <- world[i][j]
 		}
 	}
+	fmt.Println(count)
 }
 func calculateAliveCells(p Params, world [][]byte) []util.Cell {
 	var alives []util.Cell
