@@ -102,12 +102,19 @@ func distributor(p Params, c distributorChannels) {
 				case 'q':
 					//close controller client without cause error on GoL server
 					//probably reset state
+					fmt.Println("quiting")
+					c.events <- StateChange{5, Quitting}
+					//keyState = 2
 				case 'k':
 					//Shutdown all components of dist cleanly. Ouput pgm of latest state too
 					//outputPGM()
 				case 'p':
 					c.events <- StateChange{5, Paused}
 					//Pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
+					pausereq := stubs.Request{Pausereq: true}
+					pauseres := stubs.Response{}
+					client.Call(stubs.PauseFunc, pausereq, pauseres)
+					fmt.Println(pauseres.Turns)
 					//Resume after p pressed again. Yoink this system from parallel.
 					isPaused := true
 					for {
@@ -116,13 +123,16 @@ func distributor(p Params, c distributorChannels) {
 							if command == 'p' {
 								//Put unpause code here
 								c.events <- StateChange{6, Executing}
+								//pausereq1 := stubs.Request{Pausereq: false}
+								//pauseres1 := stubs.Response{}
+								//client.Call(stubs.PauseFunc, pausereq1, pauseres1)
 								isPaused = false
+
 							}
 						}
 						if !isPaused {
 							break
 						}
-
 					}
 				}
 			}
@@ -134,6 +144,7 @@ func distributor(p Params, c distributorChannels) {
 	//pass down the events channel
 	//close(c.ioOutput)
 	c.events <- FinalTurnComplete{p.Turns, finishedWorld.Alives}
+	fmt.Println("why here")
 	outputPGM(c, p, finishedWorld.World)
 	// Make sure that the Io has finished any output before exiting.
 	fmt.Println("pre idle")

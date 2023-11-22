@@ -14,6 +14,7 @@ import (
 
 var Achan []util.Cell
 var Tchan int
+var Pause bool
 
 func neighbour(req stubs.Request, y, x int) int {
 	//Check neighbours for individual cell. Find way to implement for loop for open grid checking
@@ -91,6 +92,7 @@ type GolOperations struct {
 }
 
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
+	Pause = false
 	req.Alives = calculateAliveCells(req)
 	Achan = req.Alives
 	Tchan = 0
@@ -99,9 +101,9 @@ func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (e
 		req.Alives = calculateAliveCells(req)
 		Achan = req.Alives
 		Tchan = Tchan + 1
-		//res.Alives = Achan
-		//res.Turns = Tchan
+		for Pause == true {
 
+		}
 	}
 	res.World = req.World
 	res.Alives = calculateAliveCells(req)
@@ -112,6 +114,16 @@ func (g *GolOperations) ServerTicker(req stubs.Request, res *stubs.Response) (er
 	res.Alives = Achan
 	res.Turns = Tchan
 	fmt.Println(Achan, Tchan)
+	return
+}
+
+func (g *GolOperations) PauseFunc(req stubs.Request, res *stubs.Response) (err error) {
+	if req.Pausereq == true {
+		Pause = true
+	} else if req.Pausereq == false {
+		Pause = false
+	}
+	res.Turns = Tchan
 	return
 }
 
