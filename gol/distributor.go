@@ -80,8 +80,24 @@ func makeTicker(client *rpc.Client, world [][]byte, done chan bool, c distributo
 					//Shutdown all components of dist cleanly. Ouput pgm of latest state too
 					//outputPGM()
 				case 'p':
+					c.events <- StateChange{5, Paused}
 					//Pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
 					//Resume after p pressed again. Yoink this system from parallel.
+					isPaused := true
+					for {
+						select {
+						case command := <-c.KeyPresses:
+							if command == 'p' {
+								//Put unpause code here
+								c.events <- StateChange{6, Executing}
+								isPaused = false
+							}
+						}
+						if !isPaused {
+							break
+						}
+
+					}
 				}
 			}
 		}
