@@ -19,6 +19,7 @@ type distributorChannels struct {
 	ioFilename chan<- string
 	ioOutput   chan<- uint8
 	ioInput    <-chan uint8
+	KeyPresses <-chan rune
 }
 
 func outputPGM(c distributorChannels, p Params, world [][]uint8) {
@@ -66,6 +67,22 @@ func makeTicker(client *rpc.Client, world [][]byte, done chan bool, c distributo
 				fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
 				//fmt.Println(response.Turns, response.Alives)
 				c.events <- AliveCellsCount{tiresponse.Turns, len(tiresponse.Alives)}
+			case command := <-c.KeyPresses:
+				switch command {
+
+				case 's':
+					fmt.Println("PRESSES S")
+					//outputPGM()
+				case 'q':
+					//close controller client without cause error on GoL server
+					//probably reset state
+				case 'k':
+					//Shutdown all components of dist cleanly. Ouput pgm of latest state too
+					//outputPGM()
+				case 'p':
+					//Pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
+					//Resume after p pressed again. Yoink this system from parallel.
+				}
 			}
 		}
 	}()
