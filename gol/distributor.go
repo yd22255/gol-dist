@@ -6,7 +6,6 @@ import (
 	"net/rpc"
 	"strconv"
 	"time"
-
 	"uk.ac.bris.cs/gameoflife/stubs"
 )
 
@@ -50,9 +49,36 @@ func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
 	return response
 }
 
-func makeTicker(client *rpc.Client, world [][]byte, done chan bool, c distributorChannels) {
-	fmt.Println("ticker start")
+// distributor divides the work between workers and interacts with other goroutines.
+func distributor(p Params, c distributorChannels) {
+	///this bit can't be in distributor bc it loops
+	flag.Parse()
+	client, _ := rpc.Dial("tcp", *server)
+	defer client.Close()
+	/// but i dont know where to put it in that case given i'm not meant to have a client program
+	//i think it might work if i close the server at the end of the distributor? but idk how to do that and then get it running again
+
+	// TODO: Create a 2D slice to store the world.
+	//make param string for filename and send it here
+	fmt.Println(p.ImageWidth, p.ImageHeight)
+	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth)
+	c.ioCommand <- ioInput
+	c.ioFilename <- filename
+	worldslice := make([][]uint8, p.ImageHeight)
+	for i := range worldslice {
+		worldslice[i] = make([]uint8, p.ImageWidth)
+	}
+	for i := 0; i < p.ImageHeight; i++ {
+		for j := 0; j < p.ImageWidth; j++ {
+			worldslice[i][j] = <-c.ioInput
+		}
+	}
+
+	done := make(chan bool, 1)
+
+	// TODO: Execute all turns of the Game of Life.
 	go func() {
+		fmt.Println("ticker start")
 		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
 		for {
@@ -102,38 +128,6 @@ func makeTicker(client *rpc.Client, world [][]byte, done chan bool, c distributo
 			}
 		}
 	}()
-	return
-}
-
-// distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels) {
-	///this bit can't be in distributor bc it loops
-	flag.Parse()
-	client, _ := rpc.Dial("tcp", *server)
-	defer client.Close()
-	/// but i dont know where to put it in that case given i'm not meant to have a client program
-	//i think it might work if i close the server at the end of the distributor? but idk how to do that and then get it running again
-
-	// TODO: Create a 2D slice to store the world.
-	//make param string for filename and send it here
-	fmt.Println(p.ImageWidth, p.ImageHeight)
-	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth)
-	c.ioCommand <- ioInput
-	c.ioFilename <- filename
-	worldslice := make([][]uint8, p.ImageHeight)
-	for i := range worldslice {
-		worldslice[i] = make([]uint8, p.ImageWidth)
-	}
-	for i := 0; i < p.ImageHeight; i++ {
-		for j := 0; j < p.ImageWidth; j++ {
-			worldslice[i][j] = <-c.ioInput
-		}
-	}
-
-	done := make(chan bool, 1)
-
-	// TODO: Execute all turns of the Game of Life.
-	go makeTicker(client, worldslice, done, c)
 	finishedWorld := makeCall(client, worldslice, p)
 	turn := 0
 	// TODO: Report the final state using FinalTurnCompleteEvent.
