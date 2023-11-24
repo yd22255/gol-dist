@@ -102,9 +102,11 @@ func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (e
 		Achan = req.Alives
 		Tchan = Tchan + 1
 		for Pause == true {
-
+			//fmt.Println(Tchan)
+			//uncomment to prove that it's paused properly
 		}
 	}
+	fmt.Println("returning")
 	res.World = req.World
 	res.Alives = calculateAliveCells(req)
 	return
@@ -113,7 +115,6 @@ func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (e
 func (g *GolOperations) ServerTicker(req stubs.Request, res *stubs.Response) (err error) {
 	res.Alives = Achan
 	res.Turns = Tchan
-	fmt.Println(Achan, Tchan)
 	return
 }
 
