@@ -6,6 +6,7 @@ import (
 	"net/rpc"
 	"strconv"
 	"time"
+
 	"uk.ac.bris.cs/gameoflife/stubs"
 )
 
@@ -46,6 +47,7 @@ func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
 	request := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
 	response := new(stubs.Response)
 	client.Call(stubs.ExecuteHandler, request, response)
+	fmt.Println(response)
 	return response
 }
 
@@ -102,36 +104,38 @@ func distributor(p Params, c distributorChannels) {
 				case 'q':
 					//close controller client without cause error on GoL server
 					//probably reset state
-					fmt.Println("quiting")
+					fmt.Println("quitting")
 					c.events <- StateChange{5, Quitting}
 					//keyState = 2
 				case 'k':
 					//Shutdown all components of dist cleanly. Ouput pgm of latest state too
 					//outputPGM()
 				case 'p':
-					c.events <- StateChange{5, Paused}
 					//Pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
 					pausereq := stubs.Request{Pausereq: true}
-					pauseres := stubs.Response{}
+					pauseres := new(stubs.Response)
 					client.Call(stubs.PauseFunc, pausereq, pauseres)
-					fmt.Println(pauseres.Turns)
+					//fmt.Println(pauseres.Turns)
+					c.events <- StateChange{pauseres.Turns, Paused}
 					//Resume after p pressed again. Yoink this system from parallel.
 					isPaused := true
+				nested:
 					for {
 						select {
 						case command := <-c.KeyPresses:
 							if command == 'p' {
 								//Put unpause code here
-								c.events <- StateChange{6, Executing}
-								//pausereq1 := stubs.Request{Pausereq: false}
-								//pauseres1 := stubs.Response{}
-								//client.Call(stubs.PauseFunc, pausereq1, pauseres1)
+
+								pausereq1 := stubs.Request{Pausereq: false}
+								pauseres1 := new(stubs.Response)
+								client.Call(stubs.PauseFunc, pausereq1, pauseres1)
+								c.events <- StateChange{pauseres1.Turns, Executing}
 								isPaused = false
 
 							}
 						}
 						if !isPaused {
-							break
+							break nested
 						}
 					}
 				}
@@ -139,6 +143,8 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}()
 	finishedWorld := makeCall(client, worldslice, p)
+	//above call isn't blocking, so, despite the server being paused properly, the client will just
+	//rocket to the end and assume finishedWorld is empty??
 	turn := 0
 	// TODO: Report the final state using FinalTurnCompleteEvent.
 	//pass down the events channel
