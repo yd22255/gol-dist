@@ -99,8 +99,10 @@ func distributor(p Params, c distributorChannels) {
 				switch command {
 
 				case 's':
-					fmt.Println("PRESSES S")
-					//outputPGM()
+					srequest := stubs.Request{}
+					sresponse := new(stubs.Response)
+					client.Call(stubs.PrintPGM, srequest, sresponse)
+					outputPGM(c, p, sresponse.World)
 				case 'q':
 					//close controller client without cause error on GoL server
 					//probably reset state
