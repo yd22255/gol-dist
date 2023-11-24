@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net"
 	"net/rpc"
+	"os"
 	"time"
 
 	"uk.ac.bris.cs/gameoflife/stubs"
@@ -133,6 +134,11 @@ func (g *GolOperations) PauseFunc(req stubs.Request, res *stubs.Response) (err e
 
 func (g *GolOperations) PrintPGM(req stubs.Request, res *stubs.Response) (err error) {
 	res.World = World
+	return
+}
+
+func (g *GolOperations) KillServer(req stubs.Request, res *stubs.Response) (err error) {
+	os.Exit(1)
 	return
 }
 
