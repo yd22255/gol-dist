@@ -108,10 +108,15 @@ func distributor(p Params, c distributorChannels) {
 					//probably reset state
 					fmt.Println("quitting")
 					c.events <- StateChange{5, Quitting}
-					//keyState = 2
+					done <- true
+					close(c.events)
 				case 'k':
 					//Shutdown all components of dist cleanly. Ouput pgm of latest state too
-					//outputPGM()
+					krequest := stubs.Request{}
+					kresponse := new(stubs.Response)
+					client.Call(stubs.PrintPGM, krequest, kresponse)
+					outputPGM(c, p, kresponse.World)
+
 				case 'p':
 					//Pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
 					pausereq := stubs.Request{Pausereq: true}
