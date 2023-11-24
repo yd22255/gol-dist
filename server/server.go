@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net"
 	"net/rpc"
+	"os"
 	"time"
 
 	"uk.ac.bris.cs/gameoflife/stubs"
@@ -14,6 +15,8 @@ import (
 
 var Achan []util.Cell
 var Tchan int
+var Pause bool
+var World [][]byte
 
 func neighbour(req stubs.Request, y, x int) int {
 	//Check neighbours for individual cell. Find way to implement for loop for open grid checking
@@ -91,27 +94,51 @@ type GolOperations struct {
 }
 
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
+	Pause = false
 	req.Alives = calculateAliveCells(req)
 	Achan = req.Alives
 	Tchan = 0
 	for i := 0; i < req.Turns; i++ {
 		req.World = ExecuteGol(req)
 		req.Alives = calculateAliveCells(req)
+		//update globals so other operations can access them
 		Achan = req.Alives
 		Tchan = Tchan + 1
-		fmt.Println("achannings - ", len(Achan), Tchan)
-		//res.Alives = Achan
-		//res.Turns = Tchan
-
+		World = req.World
+		for Pause == true {
+			//fmt.Println(Tchan)
+			//uncomment to prove that it's paused properly
+		}
 	}
+	fmt.Println("returning")
 	res.World = req.World
+	res.Alives = calculateAliveCells(req)
 	return
 }
 
 func (g *GolOperations) ServerTicker(req stubs.Request, res *stubs.Response) (err error) {
 	res.Alives = Achan
 	res.Turns = Tchan
-	fmt.Println(Achan, Tchan)
+	return
+}
+
+func (g *GolOperations) PauseFunc(req stubs.Request, res *stubs.Response) (err error) {
+	if req.Pausereq == true {
+		Pause = true
+	} else if req.Pausereq == false {
+		Pause = false
+	}
+	res.Turns = Tchan
+	return
+}
+
+func (g *GolOperations) PrintPGM(req stubs.Request, res *stubs.Response) (err error) {
+	res.World = World
+	return
+}
+
+func (g *GolOperations) KillServer(req stubs.Request, res *stubs.Response) (err error) {
+	os.Exit(1)
 	return
 }
 

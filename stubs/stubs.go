@@ -1,14 +1,14 @@
 package stubs
 
 import (
-	//"toby/workspace/golcw/gol-dist/gol"
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
 var ExecuteHandler = "GolOperations.ExecuteWorker"
 var ServerTicker = "GolOperations.ServerTicker"
-
-//var PremiumReverseHandler = "SecretStringOperations.FastReverse"
+var PauseFunc = "GolOperations.PauseFunc"
+var PrintPGM = "GolOperations.PrintPGM"
+var KillServer = "GolOperations.KillServer"
 
 type Params struct {
 	Turns       int
@@ -28,4 +28,5 @@ type Request struct {
 	Alives                     []util.Cell
 	World                      [][]byte
 	Turns                      int
+	Pausereq                   bool
 }
