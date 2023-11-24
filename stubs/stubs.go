@@ -1,15 +1,13 @@
 package stubs
 
 import (
-	//"toby/workspace/golcw/gol-dist/gol"
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
 var ExecuteHandler = "GolOperations.ExecuteWorker"
 var ServerTicker = "GolOperations.ServerTicker"
 var PauseFunc = "GolOperations.PauseFunc"
-
-//var PremiumReverseHandler = "SecretStringOperations.FastReverse"
+var PrintPGM = "GolOperations.PrintPGM"
 
 type Params struct {
 	Turns       int
