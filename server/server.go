@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"math/rand"
 	"net"
 	"net/rpc"
@@ -13,13 +12,13 @@ import (
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
-var Achan []util.Cell
-var Tchan int
-var Pause bool
-var World [][]byte
+var globalAlives []util.Cell
+var globalTurns int
+var globalPause bool
+var globalWorld [][]uint8
 
 func neighbour(req stubs.Request, y, x int) int {
-	//Check neighbours for individual cell. Find way to implement for loop for open grid checking
+	//Check neighbours for individual cell.
 	count := 0
 	edgex := [3]int{0, req.EndX - 1, 0}
 	edgey := [3]int{0, req.EndY - 1, 0}
@@ -51,7 +50,9 @@ func calculateAliveCells(req stubs.Request) []util.Cell {
 	var alives []util.Cell
 	for i := 0; i < req.EndX; i++ {
 		for j := 0; j < req.EndY; j++ {
+			//foreach cell in req.World
 			if req.World[i][j] == 255 {
+				//if that cell is alive, add it to the current alives list.
 				alives = append(alives, util.Cell{j, i})
 			}
 		}
@@ -60,10 +61,10 @@ func calculateAliveCells(req stubs.Request) []util.Cell {
 	return alives
 }
 
-/** Super-Secret `reversing a string' method we can't allow clients to see. **/
-func ExecuteGol(req stubs.Request) [][]byte {
-	//Feed in horizontal strips.
+func ExecuteGol(req stubs.Request) [][]uint8 {
+	//Actually execute a turn on the world itself
 	newWorld := make([][]uint8, req.EndY)
+	//create a newWorld as not to create issues during processing of the turn
 	for i := range newWorld {
 		newWorld[i] = make([]uint8, req.EndX)
 		for j := range newWorld[i] {
@@ -94,50 +95,54 @@ type GolOperations struct {
 }
 
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
-	Pause = false
+	globalPause = false
 	req.Alives = calculateAliveCells(req)
-	Achan = req.Alives
-	Tchan = 0
+	globalAlives = req.Alives
+	globalTurns = 0
 	for i := 0; i < req.Turns; i++ {
+		//execute values
 		req.World = ExecuteGol(req)
 		req.Alives = calculateAliveCells(req)
 		//update globals so other operations can access them
-		Achan = req.Alives
-		Tchan = Tchan + 1
-		World = req.World
-		for Pause == true {
-			//fmt.Println(Tchan)
-			//uncomment to prove that it's paused properly
+		globalAlives = req.Alives
+		globalTurns = globalTurns + 1
+		globalWorld = req.World
+		for globalPause == true {
+			//busy-waiting, not the most elegant solution but it works.
 		}
 	}
-	fmt.Println("returning")
+	//give the return variables their requisite values
 	res.World = req.World
 	res.Alives = calculateAliveCells(req)
 	return
 }
 
 func (g *GolOperations) ServerTicker(req stubs.Request, res *stubs.Response) (err error) {
-	res.Alives = Achan
-	res.Turns = Tchan
+	//return alives/turns for the ticker update.
+	res.Alives = globalAlives
+	res.Turns = globalTurns
 	return
 }
 
 func (g *GolOperations) PauseFunc(req stubs.Request, res *stubs.Response) (err error) {
+	//update the global pause, has dual purpose as a pause/unpause button
 	if req.Pausereq == true {
-		Pause = true
+		globalPause = true
 	} else if req.Pausereq == false {
-		Pause = false
+		globalPause = false
 	}
-	res.Turns = Tchan
+	res.Turns = globalTurns
 	return
 }
 
 func (g *GolOperations) PrintPGM(req stubs.Request, res *stubs.Response) (err error) {
-	res.World = World
+	//return the current state of the world so we can print it via PGM.
+	res.World = globalWorld
 	return
 }
 
 func (g *GolOperations) KillServer(req stubs.Request, res *stubs.Response) (err error) {
+	//kill the server gracefully.
 	os.Exit(1)
 	return
 }
