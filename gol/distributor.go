@@ -24,6 +24,7 @@ type distributorChannels struct {
 }
 
 func outputPGM(c distributorChannels, p Params, world [][]uint8) {
+	fmt.Println(world)
 	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
 	c.ioCommand <- ioOutput
 	c.ioFilename <- filename
@@ -34,25 +35,21 @@ func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 	}
 }
 
-//where neighbour was
-
-//where worker was
-
-func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
+func makeCall(client *rpc.Client, world [][]uint8, p Params) *stubs.Response {
+	//make the initial GOL call to the server which starts the processing off.
 	request := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
 	response := new(stubs.Response)
 	client.Call(stubs.ExecuteHandler, request, response)
+
 	return response
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
-	///this bit can't be in distributor bc it loops
+	//create the client and parse the server flag.
 	flag.Parse()
 	client, _ := rpc.Dial("tcp", *server)
 	defer client.Close()
-	/// but i dont know where to put it in that case given i'm not meant to have a client program
-	//i think it might work if i close the server at the end of the distributor? but idk how to do that and then get it running again
 
 	// TODO: Create a 2D slice to store the world.
 	//make param string for filename and send it here
@@ -70,10 +67,11 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}
 
-	done := make(chan bool, 1)
+	done := make(chan bool, 1) //setup a kill switch for the for-select statement
 
 	// TODO: Execute all turns of the Game of Life.
 	go func() {
+		//first we set up a ticker goroutine to execute while the gol logic is going on.
 		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
 		for {
@@ -83,11 +81,10 @@ func distributor(p Params, c distributorChannels) {
 			case <-ticker.C:
 				tirequest := stubs.Request{}
 				tiresponse := new(stubs.Response)
-
+				//make a new rpc call every 2 seconds to access the current state of affairs.
 				client.Call(stubs.ServerTicker, tirequest, tiresponse)
-				fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
-				//fmt.Println(response.Turns, response.Alives)
 				c.events <- AliveCellsCount{tiresponse.Turns, len(tiresponse.Alives)}
+				//then report it to the events channel.
 			case command := <-c.KeyPresses:
 				switch command {
 				case 's':
@@ -97,46 +94,51 @@ func distributor(p Params, c distributorChannels) {
 					client.Call(stubs.PrintPGM, srequest, sresponse)
 					outputPGM(c, p, sresponse.World)
 				case 'q':
-					//close controller client without cause error on GoL server
-					//probably reset state
+					//close controller client without causing an error on the GoL server
 					qrequest := stubs.Request{}
 					qresponse := new(stubs.Response)
 					client.Call(stubs.ServerTicker, qrequest, qresponse)
-					fmt.Println("quitting")
+					fmt.Println("Quitting")
 					c.events <- StateChange{qresponse.Turns, Quitting}
 					done <- true
 					close(c.events)
 					os.Exit(1)
 				case 'k':
-					//Shutdown all components of dist cleanly. Ouput pgm of latest state too
+					//Shutdown all components of dist cleanly.
+					//Output pgm of latest state before closing
 					krequest := stubs.Request{}
 					kresponse := new(stubs.Response)
 					client.Call(stubs.PrintPGM, krequest, kresponse)
 					outputPGM(c, p, kresponse.World)
-
+					//then send the events the signifier
 					c.events <- StateChange{5, Quitting}
 					done <- true
+					//kill the server before the controller, to ensure we dont have issues
+					//with unanchored return statements
 					killrequest := stubs.Request{}
 					killresponse := new(stubs.Response)
 					client.Call(stubs.KillServer, killrequest, killresponse)
 					close(c.events)
+					//and finally close events before killing the controller
 					os.Exit(1)
 				case 'p':
-					//Pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
+					//Pause processing on AWS node + controller print the current turn being processed
 					pausereq := stubs.Request{Pausereq: true}
 					pauseres := new(stubs.Response)
 					client.Call(stubs.PauseFunc, pausereq, pauseres)
-					//fmt.Println(pauseres.Turns)
 					c.events <- StateChange{pauseres.Turns, Paused}
-					//Resume after p pressed again. Yoink this system from parallel.
+
 					isPaused := true
 					fmt.Println("Paused!")
 				nested:
 					for {
+						//Resume after p pressed again. the for-select here prevents the
+						//ticker from sending anything during the pause, thus keeping the program
+						//completely suspended
 						select {
 						case command := <-c.KeyPresses:
 							if command == 'p' {
-								//Put unpause code here
+								//Unpause the server
 								fmt.Println("Unpaused!")
 								pausereq1 := stubs.Request{Pausereq: false}
 								pauseres1 := new(stubs.Response)
@@ -147,6 +149,7 @@ func distributor(p Params, c distributorChannels) {
 							}
 						}
 						if !isPaused {
+							//unpausing break of the for-select.
 							break nested
 						}
 					}
@@ -155,23 +158,16 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}()
 	finishedWorld := makeCall(client, worldslice, p)
-	//above call isn't blocking, so, despite the server being paused properly, the client will just
-	//rocket to the end and assume finishedWorld is empty??
 	turn := 0
 	// TODO: Report the final state using FinalTurnCompleteEvent.
-	//pass down the events channel
-	//close(c.ioOutput)
 	c.events <- FinalTurnComplete{p.Turns, finishedWorld.Alives}
 	outputPGM(c, p, finishedWorld.World)
-	// Make sure that the Io has finished any output before exiting.
+	// Make sure that the IO has finished any output before exiting.
 	fmt.Println("pre idle")
-	//c.ioCommand <- ioCheckIdle
 	fmt.Println("idle1")
-	//<-c.ioIdle
 	fmt.Println("idle")
 	c.events <- StateChange{turn, Quitting}
-	done <- true
-
+	done <- true //kill the ticker
 	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
 	close(c.events)
 }
