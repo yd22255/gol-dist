@@ -39,6 +39,7 @@ func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 //where worker was
 
 func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
+	//response=brokercall()
 	request := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
 	response := new(stubs.Response)
 	client.Call(stubs.BrokerTest, request, response)
