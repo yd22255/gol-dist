@@ -9,6 +9,7 @@ var ServerTicker = "GolOperations.ServerTicker"
 var PauseFunc = "GolOperations.PauseFunc"
 var PrintPGM = "GolOperations.PrintPGM"
 var KillServer = "GolOperations.KillServer"
+var BrokerTest = "Broker.ExecuteGol"
 
 type Params struct {
 	Turns       int

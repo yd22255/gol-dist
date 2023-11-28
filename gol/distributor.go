@@ -41,7 +41,8 @@ func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
 	request := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
 	response := new(stubs.Response)
-	client.Call(stubs.ExecuteHandler, request, response)
+	client.Call(stubs.BrokerTest, request, response)
+	fmt.Println("turns -- ", response.Turns)
 	return response
 }
 
@@ -154,7 +155,9 @@ func distributor(p Params, c distributorChannels) {
 			}
 		}
 	}()
+
 	finishedWorld := makeCall(client, worldslice, p)
+	//finishedWorld := worldslice
 	//above call isn't blocking, so, despite the server being paused properly, the client will just
 	//rocket to the end and assume finishedWorld is empty??
 	turn := 0
@@ -162,7 +165,7 @@ func distributor(p Params, c distributorChannels) {
 	//pass down the events channel
 	//close(c.ioOutput)
 	c.events <- FinalTurnComplete{p.Turns, finishedWorld.Alives}
-	outputPGM(c, p, finishedWorld.World)
+	//outputPGM(c, p, finishedWorld.World)
 	// Make sure that the Io has finished any output before exiting.
 	fmt.Println("pre idle")
 	//c.ioCommand <- ioCheckIdle
