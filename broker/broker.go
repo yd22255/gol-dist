@@ -45,6 +45,9 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 		req.Alives = brores.Alives
 		req.World = brores.World
 		Tchan, Achan = i+1, brores.Alives
+		res.Alives = brores.Alives
+		res.World = brores.World
+		fmt.Println("turn", Tchan)
 	nested:
 		for Pause == true {
 			if Pause == false {

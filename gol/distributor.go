@@ -25,6 +25,8 @@ type distributorChannels struct {
 
 func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
+	fmt.Println(filename)
+	fmt.Println((world)[8][4])
 	c.ioCommand <- ioOutput
 	c.ioFilename <- filename
 	for i := 0; i < p.ImageWidth; i++ {
@@ -169,15 +171,35 @@ func distributor(p Params, c distributorChannels) {
 	// TODO: Report the final state using FinalTurnCompleteEvent.
 	//pass down the events channel
 	//close(c.ioOutput)
+	wslice := finishedWorld.World
+	//fmt.Println(p.Turns, finishedWorld)
+	time.Sleep(2 * time.Second)
+	filename2 := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
+	//fmt.Println(filename2)
+	//fmt.Println((wslice)[8][4])
+	c.ioCommand <- ioOutput
+	c.ioFilename <- filename2
+	for i := 0; i < p.ImageWidth; i++ {
+		for j := 0; j < p.ImageHeight; j++ {
+			if wslice[i][j] == 255 {
+				fmt.Println(i, j)
+			}
+			c.ioOutput <- wslice[i][j]
+		}
+	}
 	c.events <- FinalTurnComplete{p.Turns, finishedWorld.Alives}
-	//outputPGM(c, p, finishedWorld.World)
+	c.ioCommand <- ioCheckIdle
+	Idle := <-c.ioIdle
+	if Idle == true {
+		c.events <- StateChange{turn, Quitting}
+	}
 	// Make sure that the Io has finished any output before exiting.
 	fmt.Println("pre idle")
 	//c.ioCommand <- ioCheckIdle
 	fmt.Println("idle1")
 	//<-c.ioIdle
 	fmt.Println("idle")
-	c.events <- StateChange{turn, Quitting}
+
 	done <- true
 
 	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
