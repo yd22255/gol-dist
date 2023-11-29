@@ -31,9 +31,14 @@ type Broker struct {
 //Basically GoLoperations
 
 func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) {
+	var client *rpc.Client
+	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
 	fmt.Println("in broker")
-
-	res.Turns = 333
+	//fmt.Println("WORLD --", len())
+	brores := makeCall(client, req.World, stubs.Params{4, 1, 512, 512})
+	res.Turns = brores.Turns
+	res.Alives = brores.Alives
+	fmt.Println("alive --", len(res.Alives))
 	//Clearly shit in res due to this print, wont go through to distributor though :/
 	fmt.Println("returning")
 	return
@@ -41,12 +46,11 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 
 func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println("in ticker")
-	var client *rpc.Client
-	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
-	tirequest := stubs.Request{}
+
+	//tirequest := stubs.Request{}
 	tiresponse := new(stubs.Response)
 
-	client.Call(stubs.ServerTicker, tirequest, tiresponse)
+	//client.Call(stubs.ServerTicker, tirequest, tiresponse)
 	fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
 	return
 }
