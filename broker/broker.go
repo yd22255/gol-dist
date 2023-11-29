@@ -8,9 +8,11 @@ import (
 	"net/rpc"
 	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
+	"uk.ac.bris.cs/gameoflife/util"
 )
 
 var Tchan int
+var Achan []util.Cell
 var Pause bool
 var World [][]byte
 var p stubs.Params
@@ -36,10 +38,15 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
 	fmt.Println("in broker", req.Turns)
 	//fmt.Println("WORLD --", len())
-	brores := makeCall(client, req.World, stubs.Params{req.Turns, 1, req.EndX, req.EndY})
-	res.Turns = brores.Turns
-	res.Alives = brores.Alives
-	res.World = brores.World
+	for i := 0; i < req.Turns; i++ {
+		brores := makeCall(client, req.World, stubs.Params{req.Turns, 1, req.EndX, req.EndY})
+		//req.Turns = brores.Turns
+		req.Alives = brores.Alives
+		req.World = brores.World
+		Tchan, Achan = i+1, brores.Alives
+	}
+	res.Alives = req.Alives
+	res.World = req.World
 	fmt.Println("alive --", len(res.Alives))
 	//Clearly shit in res due to this print, wont go through to distributor though :/
 	fmt.Println("returning")
@@ -48,14 +55,7 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 
 func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println("in ticker")
-
-	tiresponse := new(stubs.Response)
-
-	client.Call(stubs.ServerTicker, req, tiresponse)
-
-	fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
-	res.Turns = tiresponse.Turns
-	res.Alives = tiresponse.Alives
+	res.Turns, res.Alives = Tchan, Achan
 	return
 }
 

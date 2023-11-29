@@ -100,18 +100,14 @@ func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (e
 	req.Alives = calculateAliveCells(req)
 	Achan = req.Alives
 	Tchan = 0
-	for i := 0; i < req.Turns; i++ {
-		req.World = ExecuteGol(req)
-		req.Alives = calculateAliveCells(req)
-		//update globals so other operations can access them
-		Achan = req.Alives
-		Tchan = Tchan + 1
-		World = req.World
-		fmt.Println(Tchan, len(Achan))
-		for Pause == true {
-			//fmt.Println(Tchan)
-			//uncomment to prove that it's paused properly
-		}
+	req.World = ExecuteGol(req)
+	req.Alives = calculateAliveCells(req)
+	//update globals so other operations can access them Achan = req.Alives Tchan = Tchan + 1
+	World = req.World
+	fmt.Println(Tchan, len(Achan))
+	for Pause == true {
+		//fmt.Println(Tchan)
+		//uncomment to prove that it's paused properly
 	}
 	fmt.Println("returning")
 	res.World = req.World
