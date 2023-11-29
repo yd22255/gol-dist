@@ -88,7 +88,7 @@ func distributor(p Params, c distributorChannels) {
 				tirequest := stubs.Request{}
 				tiresponse := new(stubs.Response)
 
-				client.Call(stubs.ServerTicker, tirequest, tiresponse)
+				client.Call(stubs.TickInterface, tirequest, tiresponse)
 				fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
 				//fmt.Println(response.Turns, response.Alives)
 				c.events <- AliveCellsCount{tiresponse.Turns, len(tiresponse.Alives)}

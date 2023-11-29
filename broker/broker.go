@@ -32,17 +32,22 @@ type Broker struct {
 
 func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println("in broker")
-	var client *rpc.Client
 
-	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
-	World = req.World
-
-	//finishedWorld := new([][]uint8)
-	res = makeCall(client, World, stubs.Params{16, 1, 512, 512})
-	fmt.Println(len(res.Alives))
-	fmt.Println(res.Turns)
+	res.Turns = 333
 	//Clearly shit in res due to this print, wont go through to distributor though :/
 	fmt.Println("returning")
+	return
+}
+
+func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err error) {
+	fmt.Println("in ticker")
+	var client *rpc.Client
+	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
+	tirequest := stubs.Request{}
+	tiresponse := new(stubs.Response)
+
+	client.Call(stubs.ServerTicker, tirequest, tiresponse)
+	fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
 	return
 }
 

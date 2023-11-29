@@ -10,6 +10,7 @@ var PauseFunc = "GolOperations.PauseFunc"
 var PrintPGM = "GolOperations.PrintPGM"
 var KillServer = "GolOperations.KillServer"
 var BrokerTest = "Broker.ExecuteGol"
+var TickInterface = "Broker.TickerInterface"
 
 type Params struct {
 	Turns       int
