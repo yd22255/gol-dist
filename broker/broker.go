@@ -14,6 +14,7 @@ var Tchan int
 var Pause bool
 var World [][]byte
 var p stubs.Params
+var client *rpc.Client
 
 func makeCall(client *rpc.Client, world [][]byte, p stubs.Params) *stubs.Response {
 	brorequest := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
@@ -33,11 +34,12 @@ type Broker struct {
 func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) {
 	var client *rpc.Client
 	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
-	fmt.Println("in broker")
+	fmt.Println("in broker", req.Turns)
 	//fmt.Println("WORLD --", len())
-	brores := makeCall(client, req.World, stubs.Params{4, 1, 512, 512})
+	brores := makeCall(client, req.World, stubs.Params{req.Turns, 1, req.EndX, req.EndY})
 	res.Turns = brores.Turns
 	res.Alives = brores.Alives
+	res.World = brores.World
 	fmt.Println("alive --", len(res.Alives))
 	//Clearly shit in res due to this print, wont go through to distributor though :/
 	fmt.Println("returning")
@@ -47,16 +49,19 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println("in ticker")
 
-	//tirequest := stubs.Request{}
 	tiresponse := new(stubs.Response)
 
-	//client.Call(stubs.ServerTicker, tirequest, tiresponse)
+	client.Call(stubs.ServerTicker, req, tiresponse)
+
 	fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
+	res.Turns = tiresponse.Turns
+	res.Alives = tiresponse.Alives
 	return
 }
 
 func main() {
 	pAddr := flag.String("brok", "8031", "Port to listen on")
+	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
 	rpc.Register(&Broker{})

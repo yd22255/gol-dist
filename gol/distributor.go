@@ -161,7 +161,7 @@ func distributor(p Params, c distributorChannels) {
 	//test := make(chan [][]uint8)
 	//test1 := make(chan int)
 	finishedWorld := makeCall(client, worldslice, p)
-	fmt.Println("prrof --", finishedWorld)
+	//fmt.Println("prrof --", finishedWorld)
 	//finishedWorld := worldslice
 	//above call isn't blocking, so, despite the server being paused properly, the client will just
 	//rocket to the end and assume finishedWorld is empty??
