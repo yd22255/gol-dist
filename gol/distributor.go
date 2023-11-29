@@ -129,7 +129,7 @@ func distributor(p Params, c distributorChannels) {
 					//Pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
 					pausereq := stubs.Request{Pausereq: true}
 					pauseres := new(stubs.Response)
-					client.Call(stubs.PauseFunc, pausereq, pauseres)
+					client.Call(stubs.PauseTest, pausereq, pauseres)
 					//fmt.Println(pauseres.Turns)
 					c.events <- StateChange{pauseres.Turns, Paused}
 					//Resume after p pressed again. Yoink this system from parallel.
@@ -144,7 +144,7 @@ func distributor(p Params, c distributorChannels) {
 								fmt.Println("Unpaused!")
 								pausereq1 := stubs.Request{Pausereq: false}
 								pauseres1 := new(stubs.Response)
-								client.Call(stubs.PauseFunc, pausereq1, pauseres1)
+								client.Call(stubs.PauseTest, pausereq1, pauseres1)
 								c.events <- StateChange{pauseres1.Turns, Executing}
 								isPaused = false
 
