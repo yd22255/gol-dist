@@ -21,12 +21,11 @@ func makeCall(client *rpc.Client, world [][]byte, p stubs.Params) *stubs.Respons
 	client.Call(stubs.ExecuteHandler, brorequest, brosponse)
 	//I think will need a new stubs to pass appropriate values. Also not sure if all params are needed, + start x is useless even when parallelised
 	//actually no, can probably just condense original stubs, which should be shortened anyway imo
-
+	fmt.Println("brosponese - ", brosponse.Alives)
 	return brosponse
 }
 
 type Broker struct {
-	holder string
 }
 
 //Basically GoLoperations
@@ -35,21 +34,18 @@ func (s *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 	fmt.Println("in broker")
 	var client *rpc.Client
 
-	client, _ = rpc.Dial("tcp", s.holder)
+	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
+	World = req.World
+
 	//finishedWorld := new([][]uint8)
-	go makeCall(client, World, p)
-	for i := 0; i < req.Turns; i++ {
-		fmt.Println("hi")
-
-		fmt.Println("hi")
-	}
-
+	res = makeCall(client, World, stubs.Params{16, 1, 512, 512})
+	fmt.Println(res.Alives)
 	res.Turns = 123
 	return
 }
 
 func main() {
-	pAddr := flag.String("port", "8030", "Port to listen on")
+	pAddr := flag.String("port", "8031", "Port to listen on")
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
 	rpc.Register(&Broker{})

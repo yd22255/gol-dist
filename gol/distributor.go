@@ -11,7 +11,7 @@ import (
 	"uk.ac.bris.cs/gameoflife/stubs"
 )
 
-var server = flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
+var server = flag.String("server", "127.0.0.1:8031", "IP:port string to connect to as server")
 
 type distributorChannels struct {
 	events     chan<- Event
@@ -158,6 +158,7 @@ func distributor(p Params, c distributorChannels) {
 	}()
 
 	finishedWorld := makeCall(client, worldslice, p)
+	fmt.Println("prrof --", finishedWorld.Turns)
 	//finishedWorld := worldslice
 	//above call isn't blocking, so, despite the server being paused properly, the client will just
 	//rocket to the end and assume finishedWorld is empty??
