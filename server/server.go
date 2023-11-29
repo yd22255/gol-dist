@@ -115,6 +115,7 @@ func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (e
 	fmt.Println("returning")
 	res.World = req.World
 	res.Alives = calculateAliveCells(req)
+	res.Turns = 200
 	return
 }
 
@@ -146,13 +147,10 @@ func (g *GolOperations) KillServer(req stubs.Request, res *stubs.Response) (err 
 
 func main() {
 	pAddr := flag.String("port", "8030", "Port to listen on")
-	//bAddr := flag.String("broker", "8030", "Broker address")
 	flag.Parse()
-	//client, _ := rpc.Dial("tcp", *bAddr)
 	rand.Seed(time.Now().UnixNano())
 	rpc.Register(&GolOperations{})
 	listener, _ := net.Listen("tcp", ":"+*pAddr)
-	//client.Call(Broker)
 	//^^ Need to setup broker somehow since we can't build it ourselves. Probably make method in broker itself
 	defer listener.Close()
 	rpc.Accept(listener)

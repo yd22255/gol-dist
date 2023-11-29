@@ -21,7 +21,7 @@ func makeCall(client *rpc.Client, world [][]byte, p stubs.Params) *stubs.Respons
 	client.Call(stubs.ExecuteHandler, brorequest, brosponse)
 	//I think will need a new stubs to pass appropriate values. Also not sure if all params are needed, + start x is useless even when parallelised
 	//actually no, can probably just condense original stubs, which should be shortened anyway imo
-	fmt.Println("brosponese - ", brosponse.Alives)
+	//fmt.Println("brosponese - ", brosponse.Alives)
 	return brosponse
 }
 
@@ -30,7 +30,7 @@ type Broker struct {
 
 //Basically GoLoperations
 
-func (s *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) {
+func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println("in broker")
 	var client *rpc.Client
 
@@ -39,17 +39,20 @@ func (s *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 
 	//finishedWorld := new([][]uint8)
 	res = makeCall(client, World, stubs.Params{16, 1, 512, 512})
-	fmt.Println(res.Alives)
-	res.Turns = 123
+	fmt.Println(len(res.Alives))
+	fmt.Println(res.Turns)
+	//Clearly shit in res due to this print, wont go through to distributor though :/
+	fmt.Println("returning")
 	return
 }
 
 func main() {
-	pAddr := flag.String("port", "8031", "Port to listen on")
+	pAddr := flag.String("brok", "8031", "Port to listen on")
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
 	rpc.Register(&Broker{})
 	listener, _ := net.Listen("tcp", ":"+*pAddr)
+	//^^ Need to setup broker somehow since we can't build it ourselves. Probably make method in broker itself
 	defer listener.Close()
 	rpc.Accept(listener)
 }
