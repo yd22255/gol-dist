@@ -23,8 +23,8 @@ type distributorChannels struct {
 }
 
 // function to output the inputted world as a .pgm file
-func outputPGM(c distributorChannels, p Params, world [][]uint8) {
-	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
+func outputPGM(c distributorChannels, p Params, world [][]uint8, turnsFinished int) {
+	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(turnsFinished)
 	c.ioCommand <- ioOutput
 	c.ioFilename <- filename
 	for i := 0; i < p.ImageWidth; i++ {
@@ -92,47 +92,34 @@ func distributor(p Params, c distributorChannels) {
 				switch command {
 				case 's':
 					// print PGM from current server state
-					srequest := stubs.Request{}
-					sresponse := new(stubs.Response)
-					err := client.Call(stubs.PrintPGM, srequest, sresponse)
-					if err != nil {
-						return
-					}
-					outputPGM(c, p, sresponse.World)
+					tirequest := stubs.Request{}
+					tiresponse := new(stubs.Response)
+					client.Call(stubs.TickInterface, tirequest, tiresponse)
+					outputPGM(c, p, tiresponse.World, tiresponse.Turns)
 				case 'q':
 					// close controller client without causing error on GoL server
 					qrequest := stubs.Request{}
 					qresponse := new(stubs.Response)
-					err := client.Call(stubs.ServerTicker, qrequest, qresponse)
-					if err != nil {
-						return
-					}
+					client.Call(stubs.ServerTicker, qrequest, qresponse)
 					fmt.Println("quitting")
 					c.events <- StateChange{qresponse.Turns, Quitting}
+					//client.Call(stubs.KillServer, qrequest, qresponse)
 					done <- true
 					close(c.events)
 					os.Exit(1)
 				case 'k':
 					// shutdown all components of dist cleanly
 					// output pgm of latest state too
-					krequest := stubs.Request{}
-					kresponse := new(stubs.Response)
-					err := client.Call(stubs.PrintPGM, krequest, kresponse)
-					if err != nil {
-						return
-					}
-					outputPGM(c, p, kresponse.World)
+					qrequest := stubs.Request{}
+					qresponse := new(stubs.Response)
+					client.Call(stubs.ServerTicker, qrequest, qresponse)
+					//outputPGM(c, p, qresponse.World, qresponse.Turns)
 
 					c.events <- StateChange{5, Quitting}
 					done <- true
-					killrequest := stubs.Request{}
-					killresponse := new(stubs.Response)
-					err = client.Call(stubs.KillServer, killrequest, killresponse)
-					if err != nil {
-						return
-					}
 					close(c.events)
 					os.Exit(1)
+
 				case 'p':
 					// pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
 					pausereq := stubs.Request{Pausereq: true}
@@ -178,7 +165,7 @@ func distributor(p Params, c distributorChannels) {
 	turn := 0
 
 	// outputs final .pgm file
-	outputPGM(c, p, finishedWorld.World)
+	outputPGM(c, p, finishedWorld.World, finishedWorld.Turns)
 	c.events <- FinalTurnComplete{p.Turns, finishedWorld.Alives}
 	c.ioCommand <- ioCheckIdle
 	Idle := <-c.ioIdle

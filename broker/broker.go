@@ -14,6 +14,7 @@ import (
 var Tchan int
 var Achan []util.Cell
 var Pause bool
+var World [][]uint8
 
 //var _ *rpc.Client
 
@@ -63,6 +64,7 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 		Tchan, Achan = i+1, brores.Alives
 		res.Alives = brores.Alives
 		res.World = brores.World
+		World = brores.World
 		fmt.Println("turn", Tchan)
 	nested:
 		// paused state implemented here to stop world updates until un-paused
@@ -79,7 +81,7 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 // TickerInterface to send the current turn and alive number of cells back to the controller
 func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println("in ticker")
-	res.Turns, res.Alives = Tchan, Achan
+	res.Turns, res.Alives, res.World = Tchan, Achan, World
 	return
 }
 

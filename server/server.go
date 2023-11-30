@@ -115,7 +115,6 @@ func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (e
 // PrintPGM kills server upon keypress
 func (g *GolOperations) PrintPGM(req stubs.Request, res *stubs.Response) (err error) {
 	res.World = World
-	os.Exit(1)
 	return
 
 }
