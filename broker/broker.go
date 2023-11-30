@@ -40,6 +40,15 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
 	fmt.Println("in broker", req.Turns)
 	//fmt.Println("WORLD --", len())
+	if req.Turns == 0 {
+		turnres := new(stubs.Response)
+		client.Call(stubs.FindAlives, req, turnres)
+		fmt.Println("hello - ", turnres)
+		res.Alives = turnres.Alives
+		res.Turns = req.Turns
+		res.World = req.World
+
+	}
 	for i := 0; i < req.Turns; i++ {
 		brores := makeCall(client, req.World, stubs.Params{req.Turns, 1, req.EndX, req.EndY})
 		req.Alives = brores.Alives

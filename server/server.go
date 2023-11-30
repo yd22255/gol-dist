@@ -93,6 +93,13 @@ func ExecuteGol(req stubs.Request) [][]byte {
 type GolOperations struct {
 }
 
+func (g *GolOperations) FindAlives(req stubs.Request, res *stubs.Response) (err error) {
+	fmt.Println(res.Alives)
+	res.Alives = calculateAliveCells(req)
+
+	return
+}
+
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println("exectued")
 	Pause = false

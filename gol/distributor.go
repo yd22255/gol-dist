@@ -46,7 +46,7 @@ func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
 	response := new(stubs.Response)
 	//test := make(chan int)
 	client.Call(stubs.BrokerTest, request, response)
-	fmt.Println("call done")
+	//fmt.Println("response:", response)
 
 	return response
 }
@@ -62,7 +62,7 @@ func distributor(p Params, c distributorChannels) {
 
 	// TODO: Create a 2D slice to store the world.
 	//make param string for filename and send it here
-	fmt.Println(p.ImageWidth, p.ImageHeight)
+	//fmt.Println(p.ImageWidth, p.ImageHeight)
 	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth)
 	c.ioCommand <- ioInput
 	c.ioFilename <- filename
@@ -91,7 +91,7 @@ func distributor(p Params, c distributorChannels) {
 				tiresponse := new(stubs.Response)
 
 				client.Call(stubs.TickInterface, tirequest, tiresponse)
-				fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
+				//fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
 				//fmt.Println(response.Turns, response.Alives)
 				c.events <- AliveCellsCount{tiresponse.Turns, len(tiresponse.Alives)}
 			case command := <-c.KeyPresses:
@@ -173,7 +173,7 @@ func distributor(p Params, c distributorChannels) {
 	//close(c.ioOutput)
 	wslice := finishedWorld.World
 	//fmt.Println(p.Turns, finishedWorld)
-	time.Sleep(2 * time.Second)
+	//time.Sleep(2 * time.Second)
 	filename2 := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
 	//fmt.Println(filename2)
 	//fmt.Println((wslice)[8][4])
@@ -182,7 +182,7 @@ func distributor(p Params, c distributorChannels) {
 	for i := 0; i < p.ImageWidth; i++ {
 		for j := 0; j < p.ImageHeight; j++ {
 			if wslice[i][j] == 255 {
-				fmt.Println(i, j)
+				//fmt.Println(i, j)
 			}
 			c.ioOutput <- wslice[i][j]
 		}
