@@ -13,13 +13,11 @@ import (
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
-var Achan []util.Cell
-var Tchan int
 var Pause bool
 var World [][]byte
 
+// neighbour to check how many of a cells bordering cells are alive.
 func neighbour(req stubs.Request, y, x int) int {
-	//Check neighbours for individual cell. Find way to implement for loop for open grid checking
 	count := 0
 	edgex := [3]int{0, req.EndX - 1, 0}
 	edgey := [3]int{0, req.EndY - 1, 0}
@@ -47,6 +45,7 @@ func neighbour(req stubs.Request, y, x int) int {
 	return count
 }
 
+// function to calculate alive cells for GOL logic and tests to function.
 func calculateAliveCells(req stubs.Request) []util.Cell {
 	var alives []util.Cell
 	for i := 0; i < req.EndX; i++ {
@@ -56,11 +55,11 @@ func calculateAliveCells(req stubs.Request) []util.Cell {
 			}
 		}
 	}
-
 	return alives
 }
 
-/** Super-Secret `reversing a string' method we can't allow clients to see. **/
+// ExecuteGol to compute main GoL logic
+// updates world based on alive cells through neighbour and returns
 func ExecuteGol(req stubs.Request) [][]byte {
 	//Feed in horizontal strips.
 	newWorld := make([][]uint8, req.EndY)
@@ -93,6 +92,7 @@ func ExecuteGol(req stubs.Request) [][]byte {
 type GolOperations struct {
 }
 
+// FindAlives required to pass back alive cells without entering progressing a turn
 func (g *GolOperations) FindAlives(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println(res.Alives)
 	res.Alives = calculateAliveCells(req)
@@ -100,50 +100,28 @@ func (g *GolOperations) FindAlives(req stubs.Request, res *stubs.Response) (err 
 	return
 }
 
+// ExecuteWorker interacts between server and broker to pass back a completed turn
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
 	fmt.Println("exectued")
-	Pause = false
-
 	req.Alives = calculateAliveCells(req)
-	Achan = req.Alives
-	Tchan = 0
 	req.World = ExecuteGol(req)
 	req.Alives = calculateAliveCells(req)
-	//update globals so other operations can access them Achan = req.Alives Tchan = Tchan + 1
 	World = req.World
-	fmt.Println(Tchan, len(Achan))
-	for Pause == true {
-		//fmt.Println(Tchan)
-		//uncomment to prove that it's paused properly
-	}
 	fmt.Println("returning")
 	res.World = req.World
 	res.Alives = calculateAliveCells(req)
 	return
 }
 
-func (g *GolOperations) ServerTicker(req stubs.Request, res *stubs.Response) (err error) {
-	res.Turns = Tchan
-	res.Alives = Achan
-
-	return
-}
-
-func (g *GolOperations) PauseFunc(req stubs.Request, res *stubs.Response) (err error) {
-	if req.Pausereq == true {
-		Pause = true
-	} else if req.Pausereq == false {
-		Pause = false
-	}
-	res.Turns = Tchan
-	return
-}
-
+// PrintPGM kills server upon keypress
 func (g *GolOperations) PrintPGM(req stubs.Request, res *stubs.Response) (err error) {
 	res.World = World
+	os.Exit(1)
 	return
+
 }
 
+//KillServer kills server upon keypress
 func (g *GolOperations) KillServer(req stubs.Request, res *stubs.Response) (err error) {
 	os.Exit(1)
 	return
@@ -155,7 +133,6 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	rpc.Register(&GolOperations{})
 	listener, _ := net.Listen("tcp", ":"+*pAddr)
-	//^^ Need to setup broker somehow since we can't build it ourselves. Probably make method in broker itself
 	defer listener.Close()
 	rpc.Accept(listener)
 }

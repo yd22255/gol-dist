@@ -6,7 +6,6 @@ import (
 
 var ExecuteHandler = "GolOperations.ExecuteWorker"
 var ServerTicker = "GolOperations.ServerTicker"
-var PauseFunc = "GolOperations.PauseFunc"
 var PrintPGM = "GolOperations.PrintPGM"
 var KillServer = "GolOperations.KillServer"
 var FindAlives = "GolOperations.FindAlives"

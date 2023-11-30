@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-
 	"uk.ac.bris.cs/gameoflife/stubs"
 )
 
@@ -23,10 +22,9 @@ type distributorChannels struct {
 	KeyPresses <-chan rune
 }
 
+// function to output the inputted world as a .pgm file
 func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
-	fmt.Println(filename)
-	fmt.Println((world)[8][4])
 	c.ioCommand <- ioOutput
 	c.ioFilename <- filename
 	for i := 0; i < p.ImageWidth; i++ {
@@ -36,33 +34,21 @@ func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 	}
 }
 
-//where neighbour was
-
-//where worker was
-
+// call to broker
 func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
-	//response=brokercall()
 	request := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
 	response := new(stubs.Response)
-	//test := make(chan int)
 	client.Call(stubs.BrokerTest, request, response)
-	//fmt.Println("response:", response)
-
 	return response
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
-	///this bit can't be in distributor bc it loops
 	flag.Parse()
 	client, _ := rpc.Dial("tcp", *broker)
 	defer client.Close()
-	/// but i dont know where to put it in that case given i'm not meant to have a client program
-	//i think it might work if i close the server at the end of the distributor? but idk how to do that and then get it running again
 
-	// TODO: Create a 2D slice to store the world.
-	//make param string for filename and send it here
-	//fmt.Println(p.ImageWidth, p.ImageHeight)
+	// zero-turn world created from inputted file
 	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth)
 	c.ioCommand <- ioInput
 	c.ioFilename <- filename
@@ -78,7 +64,7 @@ func distributor(p Params, c distributorChannels) {
 
 	done := make(chan bool, 1)
 
-	// TODO: Execute all turns of the Game of Life.
+	// goroutine runs both ticker and SDL keypress logic
 	go func() {
 		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
@@ -89,22 +75,18 @@ func distributor(p Params, c distributorChannels) {
 			case <-ticker.C:
 				tirequest := stubs.Request{}
 				tiresponse := new(stubs.Response)
-
 				client.Call(stubs.TickInterface, tirequest, tiresponse)
-				//fmt.Println(tiresponse.Turns, len(tiresponse.Alives))
-				//fmt.Println(response.Turns, response.Alives)
 				c.events <- AliveCellsCount{tiresponse.Turns, len(tiresponse.Alives)}
 			case command := <-c.KeyPresses:
 				switch command {
 				case 's':
-					//print PGM from current server state
+					// print PGM from current server state
 					srequest := stubs.Request{}
 					sresponse := new(stubs.Response)
 					client.Call(stubs.PrintPGM, srequest, sresponse)
 					outputPGM(c, p, sresponse.World)
 				case 'q':
-					//close controller client without cause error on GoL server
-					//probably reset state
+					// close controller client without causing error on GoL server
 					qrequest := stubs.Request{}
 					qresponse := new(stubs.Response)
 					client.Call(stubs.ServerTicker, qrequest, qresponse)
@@ -114,7 +96,8 @@ func distributor(p Params, c distributorChannels) {
 					close(c.events)
 					os.Exit(1)
 				case 'k':
-					//Shutdown all components of dist cleanly. Ouput pgm of latest state too
+					// shutdown all components of dist cleanly
+					// output pgm of latest state too
 					krequest := stubs.Request{}
 					kresponse := new(stubs.Response)
 					client.Call(stubs.PrintPGM, krequest, kresponse)
@@ -128,16 +111,17 @@ func distributor(p Params, c distributorChannels) {
 					close(c.events)
 					os.Exit(1)
 				case 'p':
-					//Pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
+					// pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
 					pausereq := stubs.Request{Pausereq: true}
 					pauseres := new(stubs.Response)
 					client.Call(stubs.PauseTest, pausereq, pauseres)
-					//fmt.Println(pauseres.Turns)
 					c.events <- StateChange{pauseres.Turns, Paused}
-					//Resume after p pressed again. Yoink this system from parallel.
 					isPaused := true
 					fmt.Println("Paused!")
+
 				nested:
+					// runs this loop while paused
+					// when keypress 'p' received again resume executing GoL
 					for {
 						select {
 						case command := <-c.KeyPresses:
@@ -160,33 +144,12 @@ func distributor(p Params, c distributorChannels) {
 			}
 		}
 	}()
-	//test := make(chan [][]uint8)
-	//test1 := make(chan int)
+
 	finishedWorld := makeCall(client, worldslice, p)
-	//fmt.Println("prrof --", finishedWorld)
-	//finishedWorld := worldslice
-	//above call isn't blocking, so, despite the server being paused properly, the client will just
-	//rocket to the end and assume finishedWorld is empty??
 	turn := 0
-	// TODO: Report the final state using FinalTurnCompleteEvent.
-	//pass down the events channel
-	//close(c.ioOutput)
-	wslice := finishedWorld.World
-	//fmt.Println(p.Turns, finishedWorld)
-	//time.Sleep(2 * time.Second)
-	filename2 := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth) + "x" + strconv.Itoa(p.Turns)
-	//fmt.Println(filename2)
-	//fmt.Println((wslice)[8][4])
-	c.ioCommand <- ioOutput
-	c.ioFilename <- filename2
-	for i := 0; i < p.ImageWidth; i++ {
-		for j := 0; j < p.ImageHeight; j++ {
-			if wslice[i][j] == 255 {
-				//fmt.Println(i, j)
-			}
-			c.ioOutput <- wslice[i][j]
-		}
-	}
+
+	// outputs final .pgm file
+	outputPGM(c, p, finishedWorld.World)
 	c.events <- FinalTurnComplete{p.Turns, finishedWorld.Alives}
 	c.ioCommand <- ioCheckIdle
 	Idle := <-c.ioIdle
@@ -194,14 +157,7 @@ func distributor(p Params, c distributorChannels) {
 		c.events <- StateChange{turn, Quitting}
 	}
 	// Make sure that the Io has finished any output before exiting.
-	fmt.Println("pre idle")
-	//c.ioCommand <- ioCheckIdle
-	fmt.Println("idle1")
-	//<-c.ioIdle
-	fmt.Println("idle")
-
 	done <- true
-
 	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
 	close(c.events)
 }
