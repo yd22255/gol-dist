@@ -5,15 +5,17 @@ import (
 	"math/rand"
 	"net"
 	"net/rpc"
+	"os"
 	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
-var Tchan int
-var Achan []util.Cell
+var globalTurns int
+var globalAlives []util.Cell
 var Pause bool
-var World [][]uint8
+var globalWorld [][]uint8
+var KillVar bool
 
 //var _ *rpc.Client
 
@@ -34,6 +36,7 @@ type Broker struct {
 // ExecuteGol function to call server and run GoL logic
 // with multiple AWS nodes, would split the workload across the server with different ports
 func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) {
+	KillVar = false
 	Pause = false
 	var client *rpc.Client
 	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
@@ -54,13 +57,20 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 	// makes a new call for each turn
 	// in case of multiple nodes will call these nodes, wait for responses from all of them and then call again
 	for i := 0; i < req.Turns; i++ {
+		if KillVar == true {
+			client.Call(stubs.KillServer, req, res)
+			return
+		}
 		brores := makeCall(client, req.World, stubs.Params{Turns: req.Turns, Threads: 1, ImageWidth: req.EndX, ImageHeight: req.EndY})
 		req.Alives = brores.Alives
 		req.World = brores.World
-		Tchan, Achan = i+1, brores.Alives
+		//update the requirements for the next loop
+		globalTurns, globalAlives = i+1, brores.Alives
+		globalWorld = brores.World
+		//update the ticker's values
 		res.Alives = brores.Alives
 		res.World = brores.World
-		World = brores.World
+		//update the return values
 	nested:
 		// paused state implemented here to stop world updates until un-paused
 		for Pause == true {
@@ -73,9 +83,21 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 	return
 }
 
-// TickerInterface to send the current turn and alive number of cells back to the controller
+func (b *Broker) SendKillServer(req stubs.Request, res *stubs.Response) (err error) {
+	KillVar = true
+	//turn the kill variable on to os.Exit the server
+	return
+}
+
+func (b *Broker) KillBroker(req stubs.Request, res *stubs.Response) (err error) {
+	//kill the broker cleanly
+	os.Exit(1)
+	return
+}
+
+// TickerInterface sends the current turn and alive number of cells back to the controller upon every tick
 func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err error) {
-	res.Turns, res.Alives, res.World = Tchan, Achan, World
+	res.Turns, res.Alives, res.World = globalTurns, globalAlives, globalWorld
 	return
 }
 
@@ -83,12 +105,12 @@ func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err er
 // unpauses upon being called again
 func (b *Broker) PauseFunc(req stubs.Request, res *stubs.Response) (err error) {
 	Pause = !Pause
-	res.Turns = Tchan
+	res.Turns = globalTurns
 	return
 }
 
 func main() {
-	pAddr := flag.String("brok", "8031", "Port to listen on")
+	pAddr := flag.String("broker", "8031", "Port to listen on")
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
 	err := rpc.Register(&Broker{})

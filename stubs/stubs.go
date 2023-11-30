@@ -5,13 +5,14 @@ import (
 )
 
 var ExecuteHandler = "GolOperations.ExecuteWorker"
-var ServerTicker = "GolOperations.ServerTicker"
+var SendKillServer = "Broker.SendKillServer"
 var PrintPGM = "GolOperations.PrintPGM"
 var KillServer = "GolOperations.KillServer"
 var FindAlives = "GolOperations.FindAlives"
 var BrokerTest = "Broker.ExecuteGol"
 var TickInterface = "Broker.TickerInterface"
 var PauseTest = "Broker.PauseFunc"
+var KillBroker = "Broker.KillBroker"
 
 type Params struct {
 	Turns       int
