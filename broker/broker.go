@@ -14,13 +14,17 @@ import (
 var Tchan int
 var Achan []util.Cell
 var Pause bool
-var client *rpc.Client
+
+//var _ *rpc.Client
 
 // call to server to access and run GoL logic
 func makeCall(client *rpc.Client, world [][]byte, p stubs.Params) *stubs.Response {
 	brorequest := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
 	brosponse := new(stubs.Response)
-	client.Call(stubs.ExecuteHandler, brorequest, brosponse)
+	err := client.Call(stubs.ExecuteHandler, brorequest, brosponse)
+	if err != nil {
+		return nil
+	}
 	return brosponse
 }
 
@@ -39,7 +43,10 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 	// prerequisite for testing with zero-turn games
 	if req.Turns == 0 {
 		turnres := new(stubs.Response)
-		client.Call(stubs.FindAlives, req, turnres)
+		err := client.Call(stubs.FindAlives, req, turnres)
+		if err != nil {
+			return err
+		}
 		fmt.Println("hello - ", turnres)
 		res.Alives = turnres.Alives
 		res.Turns = req.Turns
@@ -87,11 +94,18 @@ func (b *Broker) PauseFunc(req stubs.Request, res *stubs.Response) (err error) {
 
 func main() {
 	pAddr := flag.String("brok", "8031", "Port to listen on")
-	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
-	rpc.Register(&Broker{})
+	err := rpc.Register(&Broker{})
+	if err != nil {
+		return
+	}
 	listener, _ := net.Listen("tcp", ":"+*pAddr)
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+
+		}
+	}(listener)
 	rpc.Accept(listener)
 }

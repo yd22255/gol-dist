@@ -38,7 +38,10 @@ func outputPGM(c distributorChannels, p Params, world [][]uint8) {
 func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
 	request := stubs.Request{StartY: 0, EndY: p.ImageHeight, StartX: 0, EndX: p.ImageWidth, World: world, Turns: p.Turns}
 	response := new(stubs.Response)
-	client.Call(stubs.BrokerTest, request, response)
+	err := client.Call(stubs.BrokerTest, request, response)
+	if err != nil {
+		return nil
+	}
 	return response
 }
 
@@ -46,7 +49,12 @@ func makeCall(client *rpc.Client, world [][]byte, p Params) *stubs.Response {
 func distributor(p Params, c distributorChannels) {
 	flag.Parse()
 	client, _ := rpc.Dial("tcp", *broker)
-	defer client.Close()
+	defer func(client *rpc.Client) {
+		err := client.Close()
+		if err != nil {
+
+		}
+	}(client)
 
 	// zero-turn world created from inputted file
 	filename := strconv.Itoa(p.ImageHeight) + "x" + strconv.Itoa(p.ImageWidth)
@@ -75,7 +83,10 @@ func distributor(p Params, c distributorChannels) {
 			case <-ticker.C:
 				tirequest := stubs.Request{}
 				tiresponse := new(stubs.Response)
-				client.Call(stubs.TickInterface, tirequest, tiresponse)
+				err := client.Call(stubs.TickInterface, tirequest, tiresponse)
+				if err != nil {
+					return
+				}
 				c.events <- AliveCellsCount{tiresponse.Turns, len(tiresponse.Alives)}
 			case command := <-c.KeyPresses:
 				switch command {
@@ -83,13 +94,19 @@ func distributor(p Params, c distributorChannels) {
 					// print PGM from current server state
 					srequest := stubs.Request{}
 					sresponse := new(stubs.Response)
-					client.Call(stubs.PrintPGM, srequest, sresponse)
+					err := client.Call(stubs.PrintPGM, srequest, sresponse)
+					if err != nil {
+						return
+					}
 					outputPGM(c, p, sresponse.World)
 				case 'q':
 					// close controller client without causing error on GoL server
 					qrequest := stubs.Request{}
 					qresponse := new(stubs.Response)
-					client.Call(stubs.ServerTicker, qrequest, qresponse)
+					err := client.Call(stubs.ServerTicker, qrequest, qresponse)
+					if err != nil {
+						return
+					}
 					fmt.Println("quitting")
 					c.events <- StateChange{qresponse.Turns, Quitting}
 					done <- true
@@ -100,21 +117,30 @@ func distributor(p Params, c distributorChannels) {
 					// output pgm of latest state too
 					krequest := stubs.Request{}
 					kresponse := new(stubs.Response)
-					client.Call(stubs.PrintPGM, krequest, kresponse)
+					err := client.Call(stubs.PrintPGM, krequest, kresponse)
+					if err != nil {
+						return
+					}
 					outputPGM(c, p, kresponse.World)
 
 					c.events <- StateChange{5, Quitting}
 					done <- true
 					killrequest := stubs.Request{}
 					killresponse := new(stubs.Response)
-					client.Call(stubs.KillServer, killrequest, killresponse)
+					err = client.Call(stubs.KillServer, killrequest, killresponse)
+					if err != nil {
+						return
+					}
 					close(c.events)
 					os.Exit(1)
 				case 'p':
 					// pause processing on AWS node + controller print current turn being processed (prolly yoink ticker code)
 					pausereq := stubs.Request{Pausereq: true}
 					pauseres := new(stubs.Response)
-					client.Call(stubs.PauseTest, pausereq, pauseres)
+					err := client.Call(stubs.PauseTest, pausereq, pauseres)
+					if err != nil {
+						return
+					}
 					c.events <- StateChange{pauseres.Turns, Paused}
 					isPaused := true
 					fmt.Println("Paused!")
@@ -130,7 +156,10 @@ func distributor(p Params, c distributorChannels) {
 								fmt.Println("Unpaused!")
 								pausereq1 := stubs.Request{Pausereq: false}
 								pauseres1 := new(stubs.Response)
-								client.Call(stubs.PauseTest, pausereq1, pauseres1)
+								err := client.Call(stubs.PauseTest, pausereq1, pauseres1)
+								if err != nil {
+									return
+								}
 								c.events <- StateChange{pauseres1.Turns, Executing}
 								isPaused = false
 
@@ -157,6 +186,7 @@ func distributor(p Params, c distributorChannels) {
 		c.events <- StateChange{turn, Quitting}
 	}
 	// Make sure that the Io has finished any output before exiting.
+
 	done <- true
 	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
 	close(c.events)

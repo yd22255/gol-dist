@@ -13,7 +13,6 @@ import (
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
-var Pause bool
 var World [][]byte
 
 // neighbour to check how many of a cells bordering cells are alive.
@@ -131,8 +130,16 @@ func main() {
 	pAddr := flag.String("port", "8030", "Port to listen on")
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
-	rpc.Register(&GolOperations{})
+	err := rpc.Register(&GolOperations{})
+	if err != nil {
+		return
+	}
 	listener, _ := net.Listen("tcp", ":"+*pAddr)
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+
+		}
+	}(listener)
 	rpc.Accept(listener)
 }
