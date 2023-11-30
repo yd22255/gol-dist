@@ -101,12 +101,10 @@ func (g *GolOperations) FindAlives(req stubs.Request, res *stubs.Response) (err 
 
 // ExecuteWorker interacts between server and broker to pass back a completed turn
 func (g *GolOperations) ExecuteWorker(req stubs.Request, res *stubs.Response) (err error) {
-	fmt.Println("exectued")
 	req.Alives = calculateAliveCells(req)
 	req.World = ExecuteGol(req)
 	req.Alives = calculateAliveCells(req)
 	World = req.World
-	fmt.Println("returning")
 	res.World = req.World
 	res.Alives = calculateAliveCells(req)
 	return

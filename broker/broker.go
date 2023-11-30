@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"math/rand"
 	"net"
 	"net/rpc"
@@ -37,9 +36,7 @@ type Broker struct {
 func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) {
 	Pause = false
 	var client *rpc.Client
-	fmt.Println(req.World)
 	client, _ = rpc.Dial("tcp", "127.0.0.1:8030")
-	fmt.Println("in broker", req.Turns)
 
 	// prerequisite for testing with zero-turn games
 	if req.Turns == 0 {
@@ -48,7 +45,6 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 		if err != nil {
 			return err
 		}
-		fmt.Println("hello - ", turnres)
 		res.Alives = turnres.Alives
 		res.Turns = req.Turns
 		res.World = req.World
@@ -65,7 +61,6 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 		res.Alives = brores.Alives
 		res.World = brores.World
 		World = brores.World
-		fmt.Println("turn", Tchan)
 	nested:
 		// paused state implemented here to stop world updates until un-paused
 		for Pause == true {
@@ -80,7 +75,6 @@ func (b *Broker) ExecuteGol(req stubs.Request, res *stubs.Response) (err error) 
 
 // TickerInterface to send the current turn and alive number of cells back to the controller
 func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err error) {
-	fmt.Println("in ticker")
 	res.Turns, res.Alives, res.World = Tchan, Achan, World
 	return
 }
@@ -90,7 +84,6 @@ func (b *Broker) TickerInterface(req stubs.Request, res *stubs.Response) (err er
 func (b *Broker) PauseFunc(req stubs.Request, res *stubs.Response) (err error) {
 	Pause = !Pause
 	res.Turns = Tchan
-	fmt.Println("paused status -- ", Pause)
 	return
 }
 
